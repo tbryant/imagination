@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+ <head>
+
+  <script src="js/convnet-min.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/vis.js"></script>
+  <script src="js/deepqlearn.js"></script>
+  
+  <script src="js/qlearn_rect.js"></script>
+
+ </head>
+ <body onload="start();">
+   <h1>Deep learning for tracking</h1>
+   <p>
+   Based on  <a href="http://cs.stanford.edu/people/karpathy/convnetjs/demo/rldemo.html">http://cs.stanford.edu/people/karpathy/convnetjs/demo/rldemo.html</a>
+   </p>
+
+   <button onclick="reload()" style="width: 200px; height: 30px; margin-top: 5px;">Reload</button>
+   
+   <h1>State Visualizations</h1>
+   
+   <div><b>Left</b>: Current input state (quite a useless thing to look at). <b>Right</b>: Average reward over time (this should go up as agent becomes better on average at collecting rewards)</div>
+   <canvas id="vis_canvas" width="350" height="150"></canvas>
+   <canvas id="graph_canvas" width="350" height="150"></canvas><br />
+   <canvas id="net_canvas" width="700" height="200"></canvas><br />
+
+   <div style="font-size:13px;">
+   (Takes ~10 minutes to train with current settings. If you're impatient, scroll down and load an example pre-trained network from pre-filled JSON)
+   </div>
+   <canvas id="canvas" width="700" height="500"></canvas>
+   <div id="brain_info_div"></div>
+   
+   <h1>Controls</h1>
+   <button onclick="goveryfast()">Go very fast</button>
+   <button onclick="gofast()">Go fast</button>
+   <button onclick="gonormal()">Go normal speed</button>
+   <button onclick="goslow()">Go slow</button><br />
+   <button onclick="startlearn()">Start Learning</button>
+   <button onclick="stoplearn()">Stop Learning</button>
+   
+   <h1>I/O</h1>
+   <p>
+   You can save and load a network from JSON here. Note that the textfield is prefilled with a
+   pretrained network that works reasonable well, if you're impatient to let yours train enough.
+   Just hit the load button!
+   </p>
+   <button onclick="savenet()">Save network to JSON</button>
+   <button onclick="loadnet()">Load network from JSON</button>
+   <textarea id="tt" style="width:100%; height:200px;">
+   </textarea>
+   <br />
+   
+   </div>
+ </body>
+</html>
