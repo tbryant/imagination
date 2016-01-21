@@ -1,0 +1,35 @@
+<html>
+
+<head>
+    <title>Find the rect</title>
+    <script src="js/convnet-min.js"></script>
+    <script src="js/rect_tracker.js"></script>
+</head>
+
+<body>
+    <div>
+        Training Input
+        <br>
+        <canvas id="canvas_original" style="width:64px;height:64px;"></canvas>
+    </div>
+    <div>
+        Neural Network output
+        <br>
+        <canvas id="canvas_net" style="width:64px;height:64px;"></canvas>
+    </div>
+    <div>
+        Test Input
+        <br>
+        <canvas id="canvas_test_input" style="width:256px;height:256px;"></canvas>
+    </div>
+    <div>
+        Test Output
+        <br>
+        <canvas id="canvas_test_output" style="width:256px;height:256px;"></canvas>
+    </div>
+    <br>
+    <div id="report"></div>
+    <br>
+</body>
+
+</html>
