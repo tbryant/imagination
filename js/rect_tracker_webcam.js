@@ -27,11 +27,16 @@ layer_defs.push({
     num_neurons: 20,
     activation: 'relu'
 });
+// 2 inputs: x, y
+layer_defs.push({
+    type: 'fc',
+    num_neurons: 20,
+    activation: 'relu'
+});
 layer_defs.push({
     type: 'regression',
     num_neurons: 2
 });
-// 3 outputs: r,g,b
 
 var net = new convnetjs.Net();
 net.makeLayers(layer_defs);
@@ -47,31 +52,48 @@ var trainer = new convnetjs.SGDTrainer(net,{
 
 var train = true;
 
-var currentNet;
 
 var batches_per_iteration = 1;
 var mod_skip_draw = 1;
 var smooth_loss = -1;
 
-function rgbToHsl(r, g, b){
-    r /= 255, g /= 255, b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+function rgbToHsl(r, g, b) {
+    r /= 255,
+    g /= 255,
+    b /= 255;
+    var max = Math.max(r, g, b)
+      
+    
+    
+    
+    
+    
+    
+    
+    , min = Math.min(r, g, b);
     var h, s, l = (max + min) / 2;
-
-    if(max == min){
-        h = s = 0; // achromatic
-    }else{
+    
+    if (max == min) {
+        h = s = 0;
+        // achromatic
+    } else {
         var d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch(max){
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
+        switch (max) {
+        case r:
+            h = (g - b) / d + (g < b ? 6 : 0);
+            break;
+        case g:
+            h = (b - r) / d + 2;
+            break;
+        case b:
+            h = (r - g) / d + 4;
+            break;
         }
         h /= 6;
     }
-
-    return h;
+    
+    return [h, s, l];
 }
 
 function update() {
@@ -83,28 +105,23 @@ function update() {
     
     var p = ori_data.data;
     
-    currentNet = new convnetjs.Vol(16,16,2);
+    var trainingVol = new convnetjs.Vol(16,16,2);
     var loss = 0;
     var lossi = 0;
     var N = batches_per_iteration;
     for (var iters = 0; iters < trainer.batch_size; iters++) {
         for (var i = 0; i < N; i++) {
-            // sample all coordinate
-            for (var x = 0; x < 16; x++) {
-                for (var y = 0; y < 16; y++) {
-                    var ix = ((W * y) + x) * 4;
-                    var value = rgbToHsl(p[ix], p[ix + 1], p[ix + 2]); //hue
-                    currentNet.w[ix / 4] = value;
-                }
-            }
+            updateVol(p, trainingVol);
             
-            var stats = trainer.train(currentNet, ori_data.params);
+            var stats = trainer.train(trainingVol, ori_data.params);
             loss += stats.loss;
             lossi += 1;
         
         }
     }
     loss /= lossi;
+    
+    render(nn_ctx, net.forward(trainingVol).w);
     
     if (counter === 0)
         smooth_loss = loss;
@@ -118,18 +135,40 @@ function update() {
     document.getElementById("report").innerHTML = t;
 }
 
-function draw() {
-    params = net.forward(currentNet).w;
-    render(nn_ctx, params);
+function updateVol(p, net) {
+    // sample all coordinate
+    for (var x = 0; x < 16; x++) {
+        for (var y = 0; y < 16; y++) {
+            var ix = ((16 * y) + x) * 4;
+            //hue
+            var hsl = rgbToHsl(p[ix], p[ix + 1], p[ix + 2]);
+            
+            if (((hsl[0] > 0.2) && (hsl[0] < 0.5)) && (hsl[1] > 0.5)) {
+                value = 1.0;
+            } else {
+                value = 0.0;
+            }
+            
+            //r+g+b
+            //              var value = p[ix] / 255.0 + p[ix + 1] / 255.0 + p[ix + 2] / 255.0;
+            
+            //red
+            //                     var value = p[ix] / 255.0;
+            
+            
+            net.w[ix / 4] = value;
+        }
+    }
 }
 
-function render(ctx, params, backgroundColor) {
-    //draw a rect in the middle-ish
-    if (typeof backgroundColor === 'undefined')
-        backgroundColor = "black";
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, sz, sz);
-    ctx.fillStyle = "red";
+function render(ctx, params, clear) {
+    if (typeof clear === "undefined") {
+        clear = true;
+    }
+    if (clear) {
+        ctx.clearRect(0, 0, sz, sz);
+    }
+    ctx.fillStyle = "green";
     ctx.fillRect(Math.round(params[0] * sz), Math.round(params[1] * sz), 2, 2);
 
 }
@@ -142,40 +181,37 @@ function randomHue(colorNum, colors) {
 }
 
 // evaluate current network on test set
-var testPredict = function(input_ctx, output_ctx) {
+function testPredict(input_ctx, output_ctx, background_canvas) {
     
     var v = new convnetjs.Vol(16,16,2);
     
     var p = input_ctx.getImageData(0, 0, sz, sz).data;
-    // sample all coordinate
-    for (var x = 0; x < 16; x++) {
-        for (var y = 0; y < 16; y++) {
-            var ix = ((sz * y) + x) * 4;
-            var value = (p[ix] / 255.0 + p[ix + 1] / 255.0 + p[ix + 2] / 255.0) / 3.0;
-            //red
-            // overall brightness - perhaps hue?
-            v.w[ix / 4] = value;
-        }
-    }
+    updateVol(p, v);
     
     params = net.forward(v).w;
-    console.log(params);
+//     console.log(params);
     
-    render(output_ctx, params);
+    if (typeof background_canvas === "undefined") {
+        render(output_ctx, params);
+    } 
+    else {
+        video_output_ctx.drawImage(background_canvas, 0, 0);
+        render(output_ctx, params, false);
+    }
 
 }
 
 
 function tick() {
     update();
-    draw();
-    // run prediction on test set
+    //run prediction on test set
     if ((counter % 100 === 0 && counter > 0) || counter === 100) {
         var params = [Math.random(), Math.random()];
         render(test_input_ctx, params);
         testPredict(test_input_ctx, test_output_ctx);
-        testPredict(video_input_ctx, video_output_ctx);
     }
+    testPredict(video_input_ctx, video_output_ctx, video_input_canvas);
+    
     
     counter += 1;
 }
@@ -183,8 +219,9 @@ function tick() {
 
 function updateTrainingInput() {
     var params = [Math.random(), Math.random()];
-    render(ori_ctx, params, randomHue(Math.random() * 10, 10));
     //random hue for backgroundColor
+    //render(ori_ctx, params, randomHue(Math.random() * 10, 10));
+    render(ori_ctx, params);
     ori_data = ori_ctx.getImageData(0, 0, sz, sz);
     ori_data.params = params;
 }
