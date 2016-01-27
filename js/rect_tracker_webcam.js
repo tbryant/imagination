@@ -7,19 +7,7 @@ layer_defs.push({
     type: 'input',
     out_sx: 16,
     out_sy: 16,
-    out_depth: 2
-});
-// 2 inputs: x, y
-layer_defs.push({
-    type: 'fc',
-    num_neurons: 20,
-    activation: 'relu'
-});
-// 2 inputs: x, y
-layer_defs.push({
-    type: 'fc',
-    num_neurons: 20,
-    activation: 'relu'
+    out_depth: 3
 });
 // 2 inputs: x, y
 layer_defs.push({
@@ -35,7 +23,7 @@ layer_defs.push({
 });
 layer_defs.push({
     type: 'regression',
-    num_neurons: 2
+    num_neurons: 3
 });
 
 var net = new convnetjs.Net();
@@ -61,16 +49,8 @@ function rgbToHsl(r, g, b) {
     r /= 255,
     g /= 255,
     b /= 255;
-    var max = Math.max(r, g, b)
-      
-    
-    
-    
-    
-    
-    
-    
-    , min = Math.min(r, g, b);
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
     var h, s, l = (max + min) / 2;
     
     if (max == min) {
@@ -105,7 +85,7 @@ function update() {
     
     var p = ori_data.data;
     
-    var trainingVol = new convnetjs.Vol(16,16,2);
+    var trainingVol = new convnetjs.Vol(16,16,3);
     var loss = 0;
     var lossi = 0;
     var N = batches_per_iteration;
@@ -169,7 +149,7 @@ function render(ctx, params, clear) {
         ctx.clearRect(0, 0, sz, sz);
     }
     ctx.fillStyle = "green";
-    ctx.fillRect(Math.round(params[0] * sz), Math.round(params[1] * sz), 2, 2);
+    ctx.fillRect(Math.round(params[0] * sz), Math.round(params[1] * sz), sz*params[2], sz*params[2]);
 
 }
 
@@ -183,13 +163,13 @@ function randomHue(colorNum, colors) {
 // evaluate current network on test set
 function testPredict(input_ctx, output_ctx, background_canvas) {
     
-    var v = new convnetjs.Vol(16,16,2);
+    var v = new convnetjs.Vol(16,16,3);
     
     var p = input_ctx.getImageData(0, 0, sz, sz).data;
     updateVol(p, v);
     
     params = net.forward(v).w;
-//     console.log(params);
+    //console.log(params);
     
     if (typeof background_canvas === "undefined") {
         render(output_ctx, params);
@@ -206,7 +186,7 @@ function tick() {
     update();
     //run prediction on test set
     if ((counter % 100 === 0 && counter > 0) || counter === 100) {
-        var params = [Math.random(), Math.random()];
+        var params = [Math.random(), Math.random(), Math.random()];
         render(test_input_ctx, params);
         testPredict(test_input_ctx, test_output_ctx);
     }
@@ -218,10 +198,12 @@ function tick() {
 
 
 function updateTrainingInput() {
-    var params = [Math.random(), Math.random()];
+    var params = [Math.random(), Math.random(), Math.random()];
     //random hue for backgroundColor
-    //render(ori_ctx, params, randomHue(Math.random() * 10, 10));
-    render(ori_ctx, params);
+    ori_ctx.fillStyle = randomHue(Math.random() * 10, 10);
+    ori_ctx.fillRect(0, 0, sz, sz);
+    render(ori_ctx, params, false);
+    //render(ori_ctx, params);
     ori_data = ori_ctx.getImageData(0, 0, sz, sz);
     ori_data.params = params;
 }
@@ -268,7 +250,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     video_output_ctx = video_output_canvas.getContext("2d");
     
     
-    var params = [0.5, 0.5];
+    var params = [0.5, 0.5, 0.5];
     ori_ctx = ori_canvas.getContext("2d");
     render(ori_ctx, params);
     updateTrainingInput();
